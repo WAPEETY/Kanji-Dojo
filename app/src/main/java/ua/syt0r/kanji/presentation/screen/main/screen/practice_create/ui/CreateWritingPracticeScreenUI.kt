@@ -24,6 +24,9 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.launch
 import ua.syt0r.kanji.R
@@ -36,6 +39,7 @@ import ua.syt0r.kanji.presentation.screen.main.screen.practice_create.CreateWrit
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_create.data.CreatePracticeConfiguration
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_create.data.InputProcessingResult
 import kotlin.random.Random
+
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
@@ -291,6 +295,14 @@ private fun LoadedState(
 
 }
 
+sealed class KeyboardNavigationInteraction {
+    object Enter : KeyboardNavigationInteraction()
+    object Up : KeyboardNavigationInteraction()
+    object Down : KeyboardNavigationInteraction()
+    // Define other interactions here.
+}
+
+
 @Composable
 private fun CharacterInputField(
     isEnabled: Boolean,
@@ -310,17 +322,17 @@ private fun CharacterInputField(
                 shape = MaterialTheme.shapes.small
             ),
         verticalAlignment = Alignment.CenterVertically
-    ) {
-
-        DisposableEffect(interactionSource) {
-            val disposable = interactionSource.interactions.collect {
-                if (it is KeyboardNavigationInteraction.Enter) {
+    ) {DisposableEffect(interactionSource) {
+        val disposable = CoroutineScope(Dispatchers.Main).launch {
+            interactionSource.interactions
+                .filterIsInstance<KeyboardNavigationInteraction.Enter>()
+                .collect { it ->
                     onInputSubmit(enteredText)
                     enteredText = ""
                 }
-            }
-            onDispose { disposable.cancel() }
         }
+        onDispose { disposable.cancel() }
+    }
 
         IconButton(
             onClick = { enteredText = "" }
