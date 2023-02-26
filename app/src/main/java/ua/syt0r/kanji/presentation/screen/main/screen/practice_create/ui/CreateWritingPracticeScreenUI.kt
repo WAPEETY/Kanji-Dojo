@@ -312,6 +312,16 @@ private fun CharacterInputField(
         verticalAlignment = Alignment.CenterVertically
     ) {
 
+        DisposableEffect(interactionSource) {
+            val disposable = interactionSource.interactions.collect {
+                if (it is KeyboardNavigationInteraction.Enter) {
+                    onInputSubmit(enteredText)
+                    enteredText = ""
+                }
+            }
+            onDispose { disposable.cancel() }
+        }
+
         IconButton(
             onClick = { enteredText = "" }
         ) {
